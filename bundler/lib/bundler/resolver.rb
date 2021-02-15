@@ -198,12 +198,22 @@ module Bundler
       if source
         source.specs
       elsif @no_aggregate_global_source
-        dependency.all_sources.find(-> { Index.new }) do |s|
+        dependency.all_sources.each do |s|
+          idx = s.specs
+          all_results = idx.search(dependency, base)
+          results = all_results.reject {|spec| spec.class == Bundler::StubSpecification && s.is_a?(Bundler::Source::Rubygems) }
+          next if results.empty? || results == base
+          return idx
+        end
+
+        dependency.all_sources.each do |s|
           idx = s.specs
           results = idx.search(dependency, base)
           next if results.empty? || results == base
           return idx
         end
+
+        Index.new
       else
         @source_requirements[:global]
       end
@@ -457,7 +467,7 @@ module Bundler
         if default_index = sources.index(@source_requirements[:default])
           sources.delete_at(default_index)
         end
-        sources.reject! {|s| s.specs[name].empty? }
+        sources.reject! {|s| s.specs[name].reject{|spec| spec.class == Bundler::StubSpecification }.empty? }
         sources.uniq!
         next if sources.size <= 1
 
