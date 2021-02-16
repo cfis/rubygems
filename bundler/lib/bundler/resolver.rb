@@ -467,7 +467,8 @@ module Bundler
         if default_index = sources.index(@source_requirements[:default])
           sources.delete_at(default_index)
         end
-        sources.reject! {|s| s.specs[name].reject{|spec| spec.class == Bundler::StubSpecification }.empty? }
+        dependency = Dependency.new(name, v.payload.version)
+        sources.reject! {|s| s.specs.search(dependency).reject{|spec| spec.class == Bundler::StubSpecification }.empty? }
         sources.uniq!
         next if sources.size <= 1
 
